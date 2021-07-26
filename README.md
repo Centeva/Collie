@@ -81,7 +81,7 @@ You can build the dockerfile locally with `docker build . -t collie:latest`. The
 TODO:
 
 ## Running Tests
-Test commands should be ran from the `lib` directory. Go has several commands for testing. Test files in Go are prepended with `_test.go`. Inside test files a test func must begin with `Test`. Go also has Benchmark tests built in. A benchmark func must begin with `Benchmark`. Benchmarks are useful to see how a change affects performance.
+Test commands should be ran from the `lib` directory. Go has several commands for testing. Test files in Go are appended with `_test.go`. Inside test files a test func must begin with `Test`. Go also has Benchmark tests built in. A benchmark func must begin with `Benchmark`. Benchmarks are useful to see how a change affects performance.
 
 - `go test`: Runs all tests.
 - `go test -cover`: Runs all tests and gives coverage.
