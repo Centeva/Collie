@@ -1,8 +1,9 @@
 package lib_test
 
 import (
-	"bitbucket.org/centeva/collie/lib"
 	"testing"
+
+	"bitbucket.org/centeva/collie/lib"
 )
 
 func Test_cleanBranch(t *testing.T) {
@@ -27,5 +28,11 @@ func Test_cleanBranch(t *testing.T) {
 				t.Errorf("cleanBranch() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func Benchmark_cleanBranch(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		lib.CleanBranch("test@$#\\/!?&BRANcH/123-2/")
 	}
 }
