@@ -9,7 +9,11 @@ Collie is a devops tool to help with Unitely.
 2. [Getting Started](#getting-started)
     * [Prerequisites](#prerequisites)
     * [Installation](#installation)
+    * [IDE](#ide)
 3. [Usage](#usage)
+    * [Building local](#building-local)
+    * [Docker local](#docker-local)
+    * [Private Docker](#private-Docker)
 4. [Running Tests](#running-tests)
 5. [Deployment](#deployment)
     * [Versioning](#versioning)
@@ -74,7 +78,7 @@ Running `go build` will create a `collie.exe` that you can then run manually. Th
 You can build the dockerfile locally with `docker build . -t collie:latest`. Then run with `docker run -it collie:latest --CleanBranch="feature/UNI-1234-test"`
 
 ### Private Docker
-<!-- TODO: -->
+TODO:
 
 ## Running Tests
 Test commands should be ran from the `lib` directory. Go has several commands for testing. Test files in Go are prepended with `_test.go`. Inside test files a test func must begin with `Test`. Go also has Benchmark tests built in. A benchmark func must begin with `Benchmark`. Benchmarks are useful to see how a change affects performance.
