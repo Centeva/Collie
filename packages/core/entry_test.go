@@ -1,15 +1,10 @@
-package lib_test
+package core_test
 
 import (
 	"testing"
 
-	"bitbucket.org/centeva/collie/lib"
+	"bitbucket.org/centeva/collie/packages/core"
 )
-
-type ICommandParser interface {
-	getBranch() *string
-	parseFlags()
-}
 
 type mockCommandParser struct {
 	called map[string]int
@@ -41,7 +36,7 @@ func Test_main(t *testing.T) {
 			// }()
 			// output := buf.String()
 
-			lib.Entry(cmd)
+			core.Entry(cmd)
 			if cmd.called[tt.funcName] != tt.want {
 				t.Errorf("Entry(): commandParser.%s() Should have been called (%d) times got: %v", tt.funcName, tt.want, cmd.called)
 			}

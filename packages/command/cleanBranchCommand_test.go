@@ -1,9 +1,9 @@
-package lib_test
+package command_test
 
 import (
 	"testing"
 
-	"bitbucket.org/centeva/collie/lib"
+	"bitbucket.org/centeva/collie/packages/command"
 )
 
 func Test_cleanBranch(t *testing.T) {
@@ -23,7 +23,7 @@ func Test_cleanBranch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := lib.CleanBranch(tt.args.name); got != tt.want {
+			if got := command.CleanBranch(tt.args.name); got != tt.want {
 				t.Errorf("cleanBranch() = %v, want %v", got, tt.want)
 			}
 		})
@@ -32,7 +32,7 @@ func Test_cleanBranch(t *testing.T) {
 
 func Benchmark_cleanBranch(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		lib.CleanBranch("test@$#\\/!?&BRANcH/123-2/")
+		command.CleanBranch("test@$#\\/!?&BRANcH/123-2/")
 	}
 }
 
@@ -79,7 +79,7 @@ func TestGetTeamcityTag(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotParamName, err := lib.GetTeamcityTag(tt.args.kind, tt.args.fieldName)
+			gotParamName, err := command.GetTeamcityTag(tt.args.kind, tt.args.fieldName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTeamcityTag() error = %v, wantErr %v", err, tt.wantErr)
 				return

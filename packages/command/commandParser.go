@@ -1,7 +1,11 @@
-package lib
+package command
+
+import (
+	"bitbucket.org/centeva/collie/packages/external"
+)
 
 type ICommand interface {
-	GetFlags(IFlagProvider)
+	GetFlags(external.IFlagProvider)
 	FlagsValid() bool
 	Execute(*GlobalCommandOptions) (err error)
 }
@@ -14,23 +18,20 @@ type IBeforeOthers interface {
 	BeforeOthers(*GlobalCommandOptions)
 }
 
-type GlobalCommandOptions struct {
-	Logger LoggerTypes
-}
-
 type CommandParser struct {
-	flagProvider IFlagProvider
+	flagProvider external.IFlagProvider
 	globals      *GlobalCommandOptions
 	commands     []ICommand
 }
 
-func NewCommandParser(flagProvider IFlagProvider) *CommandParser {
+func NewCommandParser(flagProvider external.IFlagProvider) *CommandParser {
 	parser := &CommandParser{
 		flagProvider: flagProvider,
 		globals:      &GlobalCommandOptions{},
 		commands: []ICommand{
 			&LoggerCommand{},
 			&CleanBranchCommand{},
+			&PRCommentCommand{},
 		},
 	}
 	return parser

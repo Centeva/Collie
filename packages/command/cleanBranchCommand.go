@@ -1,4 +1,4 @@
-package lib
+package command
 
 import (
 	"fmt"
@@ -6,15 +6,15 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"bitbucket.org/centeva/collie/packages/external"
 )
 
-type CleanBranchCommandOptions struct {
-}
 type CleanBranchCommand struct {
 	CleanBranch string `tc:"cleanbranch"`
 }
 
-func (c *CleanBranchCommand) GetFlags(flagProvider IFlagProvider) {
+func (c *CleanBranchCommand) GetFlags(flagProvider external.IFlagProvider) {
 	flagProvider.StringVar(&c.CleanBranch, "CleanBranch", "", "Name of a a branch to format")
 }
 

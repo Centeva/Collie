@@ -1,4 +1,8 @@
-package lib
+package command
+
+import (
+	"bitbucket.org/centeva/collie/packages/external"
+)
 
 type LoggerTypes string
 
@@ -14,7 +18,7 @@ type LoggerCommand struct {
 	Logger string
 }
 
-func (c *LoggerCommand) GetFlags(flagProvider IFlagProvider) {
+func (c *LoggerCommand) GetFlags(flagProvider external.IFlagProvider) {
 	flagProvider.StringVar(&c.Logger, "Logger", string(CLI), "Log output style to use [cli,teamcity]")
 }
 
