@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"bitbucket.org/centeva/collie/packages/external"
-	"bitbucket.org/centeva/collie/testUtils"
+	"bitbucket.org/centeva/collie/testutils"
 	"github.com/go-git/go-git/v5/storage/memory"
 )
 
 func Test_ListRemoteRef(t *testing.T) {
 	type args struct {
-		gitProviderArgs *testUtils.GitProviderTestArgs
+		gitProviderArgs *testutils.GitProviderTestArgs
 	}
 
 	defaultArgs := args{
-		&testUtils.GitProviderTestArgs{
+		&testutils.GitProviderTestArgs{
 			Branches: []string{
 				"branch-1",
 				"branch-2",
@@ -35,7 +35,7 @@ func Test_ListRemoteRef(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gitProvider := &testUtils.MockGitProvider{
+			gitProvider := &testutils.MockGitCliProvider{
 				TestArgs: *tt.args.gitProviderArgs,
 			}
 

@@ -4,12 +4,14 @@ import (
 	"testing"
 
 	"bitbucket.org/centeva/collie/packages/command"
-	"bitbucket.org/centeva/collie/testUtils"
+	"bitbucket.org/centeva/collie/packages/external"
+	"bitbucket.org/centeva/collie/testutils"
 )
 
 func Test_ParseCommands(t *testing.T) {
-	flagProvider := testUtils.NewMockFlagProvider()
-	sut := command.NewCommandParser(flagProvider)
+	flagProvider := testutils.NewMockFlagProvider()
+	gitProviderFactory := &external.GitProviderFactory{BitbucketManager: &testutils.MockGitProvider{}}
+	sut := command.NewCommandParser(flagProvider, gitProviderFactory)
 
 	sut.ParseCommands()
 
@@ -19,7 +21,7 @@ func Test_ParseCommands(t *testing.T) {
 	if gotParse != 1 {
 		t.Errorf("ParseFlags(): flagProvider.Parse() Should have been called once got: %v", flagProvider.Called)
 	}
-	if gotStringVar != 2 {
-		t.Errorf("ParseFlags(): flagProvider.StringVar() Should have been called twice got: %v", flagProvider.Called)
+	if gotStringVar != 1 {
+		t.Errorf("ParseFlags(): flagProvider.StringVar() Should have been called once got: %v", flagProvider.Called)
 	}
 }

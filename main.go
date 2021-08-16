@@ -7,7 +7,10 @@ import (
 )
 
 func main() {
-	cmd := command.NewCommandParser(&external.FlagProvider{})
+	gitProviderFactory := &external.GitProviderFactory{
+		BitbucketManager: external.NewBitbucketManager(),
+	}
+	cmd := command.NewCommandParser(&external.FlagProvider{}, gitProviderFactory)
 	err := core.Entry(cmd)
 	if err != nil {
 		panic(err)

@@ -1,8 +1,10 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -14,12 +16,25 @@ type CleanBranchCommand struct {
 	CleanBranch string `tc:"cleanbranch"`
 }
 
-func (c *CleanBranchCommand) GetFlags(flagProvider external.IFlagProvider) {
-	flagProvider.StringVar(&c.CleanBranch, "CleanBranch", "", "Name of a a branch to format")
+func (c *CleanBranchCommand) IsCurrentSubcommand() bool {
+	return len(os.Args) > 1 && strings.EqualFold(os.Args[1], "CleanBranch")
 }
 
-func (c *CleanBranchCommand) FlagsValid() bool {
-	return c.CleanBranch != ""
+func (c *CleanBranchCommand) GetFlags(flagProvider external.IFlagProvider) (err error) {
+	cmd := flagProvider.NewFlagSet("CleanBranch", "Format branch name Usage: CleanBranch <Branch>")
+	cmd.Parse(os.Args[1:])
+	if len(os.Args) <= 2 || os.Args[2] == "" {
+		return errors.New("format branch name Usage: CleanBranch <Branch>")
+	}
+	c.CleanBranch = os.Args[2]
+	return
+}
+
+func (c *CleanBranchCommand) FlagsValid() (err error) {
+	if c.CleanBranch == "" {
+		return errors.New("CleanBranch is required")
+	}
+	return
 }
 
 func (c *CleanBranchCommand) Execute(globals *GlobalCommandOptions) (err error) {

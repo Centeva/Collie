@@ -1,12 +1,15 @@
 package command
 
 import (
+	"os"
+
 	"bitbucket.org/centeva/collie/packages/external"
+	"github.com/pkg/errors"
 )
 
 type ICommand interface {
-	GetFlags(external.IFlagProvider)
-	FlagsValid() bool
+	GetFlags(external.IFlagProvider) (err error)
+	FlagsValid() (err error)
 	Execute(*GlobalCommandOptions) (err error)
 }
 
@@ -18,42 +21,71 @@ type IBeforeOthers interface {
 	BeforeOthers(*GlobalCommandOptions)
 }
 
+type IIsCurrentSubcommand interface {
+	IsCurrentSubcommand() bool
+}
+
+type GlobalCommandOptions struct {
+	Logger LoggerTypes
+}
+
 type CommandParser struct {
 	flagProvider external.IFlagProvider
+	gitProvider  *external.GitProviderFactory
 	globals      *GlobalCommandOptions
 	commands     []ICommand
 }
 
-func NewCommandParser(flagProvider external.IFlagProvider) *CommandParser {
+func NewCommandParser(flagProvider external.IFlagProvider, gitProviderFactory *external.GitProviderFactory) *CommandParser {
 	parser := &CommandParser{
 		flagProvider: flagProvider,
+		gitProvider:  gitProviderFactory,
 		globals:      &GlobalCommandOptions{},
 		commands: []ICommand{
 			&LoggerCommand{},
 			&CleanBranchCommand{},
-			&PRCommentCommand{},
+			NewPRCommentCommand(gitProviderFactory),
 		},
 	}
 	return parser
 }
 
 func (parser CommandParser) ParseCommands() (err error) {
-	for _, command := range parser.commands {
-		command.GetFlags(parser.flagProvider)
+
+	if len(os.Args) < 1 || os.Args[0] == "" {
+		return errors.New("Must specify a command to run")
 	}
+
 	parser.flagProvider.Parse()
 
-	for _, command := range parser.commands {
-		if ft, ok := command.(IBeforeOthers); ok {
+	// Some commands are more global (Logger), these command flags should be added to all subcommands and might have extra logic that needs to happen before we execute other commands.
+	for _, c := range parser.commands {
+		// If a command doesn't have a subcommand then it must be global.
+		if _, ok := c.(IIsCurrentSubcommand); !ok {
+			if err := c.GetFlags(parser.flagProvider); err != nil {
+				return errors.Wrapf(err, "Failed to get flags for command: %T", c)
+			}
+		}
+
+		if ft, ok := c.(IBeforeOthers); ok {
 			ft.BeforeOthers(parser.globals)
 		}
 	}
 
 	for _, c := range parser.commands {
-		if c.FlagsValid() {
-			err = c.Execute(parser.globals)
-			if err != nil {
-				return
+		if ft, ok := c.(IIsCurrentSubcommand); ok {
+			if ft.IsCurrentSubcommand() {
+				if err := c.GetFlags(parser.flagProvider); err != nil {
+					return errors.Wrapf(err, "Failed to get flags for command: %T", c)
+				}
+
+				if err = c.FlagsValid(); err != nil {
+					return errors.Wrap(err, "Failed to validate arguments")
+				}
+
+				if err = c.Execute(parser.globals); err != nil {
+					return errors.Wrap(err, "Failed to execute command")
+				}
 			}
 		}
 	}

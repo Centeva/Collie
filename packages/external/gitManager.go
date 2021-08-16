@@ -17,7 +17,7 @@ type IGitRemote interface {
 	List(o *git.ListOptions) (rfs []*plumbing.Reference, err error)
 }
 
-type IGitProvider interface {
+type IGitCliProvider interface {
 	NewRemote(s storage.Storer, c *config.RemoteConfig) IGitRemote
 }
 
@@ -28,7 +28,7 @@ func (g GitProvider) NewRemote(s storage.Storer, c *config.RemoteConfig) *git.Re
 }
 
 type GitManager struct {
-	GitProvider     IGitProvider
+	GitProvider     IGitCliProvider
 	StorageProvider IStorageProvider
 }
 

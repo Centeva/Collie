@@ -2,6 +2,7 @@ package command
 
 import (
 	"bitbucket.org/centeva/collie/packages/external"
+	"github.com/pkg/errors"
 )
 
 type LoggerTypes string
@@ -18,12 +19,21 @@ type LoggerCommand struct {
 	Logger string
 }
 
-func (c *LoggerCommand) GetFlags(flagProvider external.IFlagProvider) {
+func (c *LoggerCommand) GetFlags(flagProvider external.IFlagProvider) (err error) {
 	flagProvider.StringVar(&c.Logger, "Logger", string(CLI), "Log output style to use [cli,teamcity]")
+	return
 }
 
-func (c *LoggerCommand) FlagsValid() bool {
-	return c.Logger != ""
+func (c *LoggerCommand) FlagsValid() (err error) {
+	if c.Logger == "" {
+		return errors.New("Logger must have a value")
+	}
+
+	if c.Logger != "cli" && c.Logger != "teamcity" {
+		return errors.New("Logger must be either 'cli' or 'teamcity'")
+	}
+
+	return
 }
 
 func (c *LoggerCommand) BeforeOthers(globals *GlobalCommandOptions) {
