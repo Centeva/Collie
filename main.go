@@ -10,7 +10,7 @@ func main() {
 	gitProviderFactory := &external.GitProviderFactory{
 		BitbucketManager: external.NewBitbucketManager(),
 	}
-	cmd := command.NewCommandParser(&external.FlagProvider{}, gitProviderFactory)
+	cmd := command.NewCommandParser(&external.FlagProvider{}, gitProviderFactory, &external.KubernetesManager{})
 	err := core.Entry(cmd)
 	if err != nil {
 		panic(err)

@@ -30,21 +30,24 @@ type GlobalCommandOptions struct {
 }
 
 type CommandParser struct {
-	flagProvider external.IFlagProvider
-	gitProvider  *external.GitProviderFactory
-	globals      *GlobalCommandOptions
-	commands     []ICommand
+	flagProvider      external.IFlagProvider
+	kubernetesManager external.IKubernetesManager
+	gitProvider       *external.GitProviderFactory
+	globals           *GlobalCommandOptions
+	commands          []ICommand
 }
 
-func NewCommandParser(flagProvider external.IFlagProvider, gitProviderFactory *external.GitProviderFactory) *CommandParser {
+func NewCommandParser(flagProvider external.IFlagProvider, gitProviderFactory *external.GitProviderFactory, kubernetesManager external.IKubernetesManager) *CommandParser {
 	parser := &CommandParser{
-		flagProvider: flagProvider,
-		gitProvider:  gitProviderFactory,
-		globals:      &GlobalCommandOptions{},
+		flagProvider:      flagProvider,
+		gitProvider:       gitProviderFactory,
+		kubernetesManager: kubernetesManager,
+		globals:           &GlobalCommandOptions{},
 		commands: []ICommand{
 			&LoggerCommand{},
 			&CleanBranchCommand{},
 			NewPRCommentCommand(gitProviderFactory),
+			NewNamespaceCommand(kubernetesManager),
 		},
 	}
 	return parser
