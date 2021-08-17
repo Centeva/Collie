@@ -10,8 +10,11 @@ func main() {
 	gitProviderFactory := &external.GitProviderFactory{
 		BitbucketManager: external.NewBitbucketManager(),
 	}
-	cmd := command.NewCommandParser(&external.FlagProvider{}, gitProviderFactory, &external.KubernetesManager{})
+	postgresManager := external.NewPostgresManager()
+
+	cmd := command.NewCommandParser(&external.FlagProvider{}, gitProviderFactory, &external.KubernetesManager{}, postgresManager)
 	err := core.Entry(cmd)
+
 	if err != nil {
 		panic(err)
 	}
