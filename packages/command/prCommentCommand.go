@@ -66,6 +66,7 @@ func (c *PRCommentCommand) IsCurrentSubcommand() bool {
 func (c *PRCommentCommand) FlagsValid() (err error) {
 	switch s := c.GitSource.(type) {
 	case *BitBucketSource:
+		log.Printf("source: %+v", s)
 		if s.Branch == nil || *s.Branch == "" {
 			return errors.New("Branch is required")
 		}

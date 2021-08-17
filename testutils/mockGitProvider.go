@@ -8,6 +8,13 @@ type MockGitProvider struct {
 	AuthRes    *external.AuthModel
 }
 
+func NewMockGitProvider() *MockGitProvider {
+	return &MockGitProvider{
+		Called:     make(map[string]int),
+		CalledWith: make(map[string][]interface{}),
+	}
+}
+
 type commentArgs struct {
 	workspace string
 	repo      string
