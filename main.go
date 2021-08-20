@@ -12,7 +12,7 @@ func main() {
 	}
 	postgresManager := external.NewPostgresManager()
 
-	cmd := command.NewCommandParser(&external.FlagProvider{}, gitProviderFactory, &external.KubernetesManager{}, postgresManager)
+	cmd := command.NewCommandParser(&external.FlagProvider{}, gitProviderFactory, &external.KubernetesManager{}, postgresManager, &external.FileReader{})
 	err := core.Entry(cmd)
 
 	if err != nil {

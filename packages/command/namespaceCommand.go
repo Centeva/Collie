@@ -81,7 +81,7 @@ func (k *NamespaceCommand) Execute(globals *GlobalCommandOptions) (err error) {
 
 	}
 
-	list, err := k.kubernetesManager.GetNamespaces()
+	list, err := k.kubernetesManager.GetNamespaces("")
 	match := false
 	for _, v := range list {
 		match = match || v == k.Namespace

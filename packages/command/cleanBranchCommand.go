@@ -1,7 +1,6 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,10 +9,12 @@ import (
 	"strings"
 
 	"bitbucket.org/centeva/collie/packages/external"
+	"github.com/pkg/errors"
 )
 
 type CleanBranchCommand struct {
 	CleanBranch string `tc:"cleanbranch"`
+	Logger      *string
 }
 
 func (c *CleanBranchCommand) IsCurrentSubcommand() bool {
@@ -22,11 +23,13 @@ func (c *CleanBranchCommand) IsCurrentSubcommand() bool {
 
 func (c *CleanBranchCommand) GetFlags(flagProvider external.IFlagProvider) (err error) {
 	cmd := flagProvider.NewFlagSet("CleanBranch", "Format branch name Usage: CleanBranch <Branch>")
-	cmd.Parse(os.Args[1:])
 	if len(os.Args) <= 2 || os.Args[2] == "" {
 		return errors.New("format branch name Usage: CleanBranch <Branch>")
 	}
 	c.CleanBranch = os.Args[2]
+	c.Logger = cmd.String("Logger", string(CLI), "Log output style to use [cli,teamcity]")
+
+	cmd.Parse(os.Args[3:])
 	return
 }
 
@@ -34,6 +37,21 @@ func (c *CleanBranchCommand) FlagsValid() (err error) {
 	if c.CleanBranch == "" {
 		return errors.New("CleanBranch is required")
 	}
+	return
+}
+
+func (c *CleanBranchCommand) BeforeExecute(globals *GlobalCommandOptions) (err error) {
+	if c.Logger == nil || *c.Logger == "" {
+		return errors.New("logger must have a value")
+	}
+
+	logger := *c.Logger
+
+	if logger != "cli" && logger != "teamcity" {
+		return errors.Errorf("logger must be either 'cli' or 'teamcity' got '%s'", logger)
+	}
+
+	globals.Logger = (LoggerTypes)(*c.Logger)
 	return
 }
 

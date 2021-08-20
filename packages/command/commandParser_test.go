@@ -11,7 +11,7 @@ import (
 func Test_ParseCommands(t *testing.T) {
 	flagProvider := testutils.NewMockFlagProvider()
 	gitProviderFactory := &external.GitProviderFactory{BitbucketManager: &testutils.MockGitProvider{}}
-	sut := command.NewCommandParser(flagProvider, gitProviderFactory, nil, nil)
+	sut := command.NewCommandParser(flagProvider, gitProviderFactory, nil, nil, nil)
 
 	sut.ParseCommands()
 

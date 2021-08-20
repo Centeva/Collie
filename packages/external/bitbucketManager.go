@@ -18,6 +18,7 @@ type GitProviderFactory struct {
 }
 
 type IGitProvider interface {
+	GetOpenPRBranches(workspace string, repo string) (branches []string, err error)
 	Comment(workspace string, repo string, branch string, comment string) (err error)
 	BasicAuth(clientId string, secret string) (auth *AuthModel, err error)
 	UserAuth(clientId string, secret string, username string, password string) (auth *AuthModel, err error)
@@ -175,6 +176,53 @@ func (m *BitbucketManager) addAuthHeader(req *http.Request) (err error) {
 
 	bearer := "Bearer " + m.auth.AccessToken
 	req.Header.Add("Authorization", bearer)
+
+	return
+}
+
+func (m *BitbucketManager) GetOpenPRBranches(workspace string, repo string) (branches []string, err error) {
+	prPath := fmt.Sprintf(`https://api.bitbucket.org/2.0/repositories/%s/%s/pullrequests`, workspace, repo)
+	prUrl, err := buildUrl(prPath, map[string]string{
+		"state":  "OPEN",
+		"fields": "values.source.branch.name,values.id",
+	})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to build Url")
+	}
+
+	var req *http.Request
+	if req, err = http.NewRequest("GET", prUrl, nil); err != nil {
+		return nil, errors.Wrap(err, "Failed to get open pullRequests")
+	}
+
+	if err = m.addAuthHeader(req); err != nil {
+		return nil, errors.Wrap(err, "Failed to add auth headers")
+	}
+
+	prRes, err := m.client.Do(req)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get open pull requests")
+	}
+
+	if prRes.StatusCode == 400 {
+		body, _ := ioutil.ReadAll(prRes.Body)
+		return nil, errors.Errorf("Request Error: %s %s", prRes.Status, string(body))
+	}
+
+	var resModel *PaginatedPullRequestModel
+	if err = jsonUnmarshal(&resModel, prRes); err != nil {
+		return nil, errors.Wrap(err, "Failed to Unmarshal request")
+	}
+
+	if resModel.ErrorCode != "" {
+		return nil, errors.Errorf("API Error: %s %s", resModel.ErrorCode, resModel.ErrorDescription)
+	}
+
+	for _, b := range resModel.Values {
+		branches = append(branches, b.Source.Branch.Name)
+	}
 
 	return
 }

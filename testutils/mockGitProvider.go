@@ -3,9 +3,10 @@ package testutils
 import "bitbucket.org/centeva/collie/packages/external"
 
 type MockGitProvider struct {
-	Called     map[string]int
-	CalledWith map[string][]interface{}
-	AuthRes    *external.AuthModel
+	Called         map[string]int
+	CalledWith     map[string][]interface{}
+	AuthRes        *external.AuthModel
+	getBranchesRes []string
 }
 
 func NewMockGitProvider() *MockGitProvider {
@@ -31,6 +32,21 @@ func (m *MockGitProvider) Comment(workspace string, repo string, branch string, 
 		comment,
 	})
 	return
+}
+
+type getOpenPRBranchesArgs struct {
+	workspace string
+	repo      string
+}
+
+func (m *MockGitProvider) GetOpenPRBranches(workspace string, repo string) (branches []string, err error) {
+	m.Called["getopenprbranches"]++
+	m.CalledWith["getopenprbranches"] = append(m.CalledWith["getopenprbranches"], &getOpenPRBranchesArgs{
+		workspace,
+		repo,
+	})
+
+	return m.getBranchesRes, nil
 }
 
 type authArgs struct {
