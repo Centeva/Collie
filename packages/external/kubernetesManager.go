@@ -128,14 +128,16 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 					},
 					Containers: []v1.Container{
 						{
-							Name:  "deletedb",
-							Image: config.Image,
-							Args:  []string{"DeleteDatabase", config.Name, fmt.Sprintf(`--ConnectionString=%s`, config.ConnectionString)},
+							Name:            "deletedb",
+							Image:           config.Image,
+							ImagePullPolicy: v1.PullAlways,
+							Args:            []string{"DeleteDatabase", config.Name, fmt.Sprintf(`--ConnectionString=%s`, config.ConnectionString)},
 						},
 						{
-							Name:  "deletenamespace",
-							Image: config.Image,
-							Args:  []string{"DeleteNamespace", config.Name},
+							Name:            "deletenamespace",
+							Image:           config.Image,
+							ImagePullPolicy: v1.PullAlways,
+							Args:            []string{"DeleteNamespace", config.Name},
 						},
 					},
 				},
