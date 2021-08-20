@@ -19,6 +19,7 @@ import (
 type KubernetesManager struct {
 	clientset *kubernetes.Clientset
 	context   context.Context
+	fail      bool
 }
 
 type IKubernetesManager interface {
@@ -109,7 +110,7 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 		config.Timeout = "2m"
 	}
 
-	ttlSecondsAfterFinished := int32(120)
+	ttlSecondsAfterFinished := int32(1)
 	name := fmt.Sprintf("cleanup-%s", config.Name)
 
 	cleanupJob := &batchv1.Job{
@@ -141,12 +142,6 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 			},
 		},
 	}
-	// log.Printf("Create job: %+v", cleanupJob)
-	_, err = k.clientset.BatchV1().Jobs(config.JobNamespace).Create(k.context, cleanupJob, metav1.CreateOptions{})
-
-	if err != nil {
-		return errors.Wrap(err, "Failed to create cleanup job")
-	}
 
 	dur, err := time.ParseDuration(config.Timeout)
 
@@ -157,7 +152,7 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 	durSeconds := int64(dur.Seconds())
 
 	watcher, err := k.clientset.BatchV1().Jobs(config.JobNamespace).Watch(k.context, metav1.ListOptions{
-		LabelSelector:  fmt.Sprintf("name=%s", name),
+		LabelSelector:  fmt.Sprintf("job-name=%s", name),
 		TimeoutSeconds: &durSeconds,
 	})
 
@@ -165,15 +160,57 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 		return errors.Wrap(err, "Failed to create watcher")
 	}
 
+	// log.Printf("Create job: %+v", cleanupJob)
+	_, err = k.clientset.BatchV1().Jobs(config.JobNamespace).Create(k.context, cleanupJob, metav1.CreateOptions{})
+
+	if err != nil {
+		return errors.Wrap(err, "Failed to create cleanup job")
+	}
+
 	for event := range watcher.ResultChan() {
 		job := event.Object.(*batchv1.Job)
 
 		switch event.Type {
-		case watch.Deleted:
-			log.Printf("Job '%s' finished sucessfully", job.Name)
-			return
+		case watch.Modified:
+			ok, err := CheckJobCompleted(job)
+
+			if err != nil {
+				return errors.Wrapf(err, "Error watching job %s", job.Name)
+			}
+
+			if ok {
+				log.Printf("Job '%s' finished sucessfully", job.Name)
+
+				deletePolicy := metav1.DeletePropagationForeground
+				err = k.clientset.BatchV1().Jobs(config.JobNamespace).Delete(k.context, name, metav1.DeleteOptions{PropagationPolicy: &deletePolicy})
+
+				if err != nil {
+					return errors.Wrap(err, "Failed to delete job")
+				}
+
+				return nil
+			}
 		}
 	}
 
 	return errors.Errorf("Timeout error watching job %s", name)
+}
+
+func CheckJobCompleted(job *batchv1.Job) (res bool, err error) {
+
+	if job == nil {
+		return false, errors.New("Job is nil")
+	}
+
+	if len(job.Status.Conditions) > 0 {
+		latest := job.Status.Conditions[len(job.Status.Conditions)-1]
+		switch latest.Type {
+		case batchv1.JobComplete:
+			return true, nil
+		default:
+			return false, errors.Errorf("Job %T: %s Details: %s", latest.Type, latest.Reason, latest.Message)
+		}
+	}
+
+	return false, nil
 }

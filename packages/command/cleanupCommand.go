@@ -2,9 +2,11 @@ package command
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	"bitbucket.org/centeva/collie/packages/external"
 	"github.com/pkg/errors"
@@ -88,8 +90,6 @@ func (c *CleanupCommand) ReadConfigFile(fileReader external.IFileReader, path st
 		return nil, errors.Wrap(err, "Failed to unmarshal config file")
 	}
 
-	log.Printf("configfile: %+v", config)
-
 	return
 }
 
@@ -146,8 +146,12 @@ func (c *CleanupCommand) Execute(globals *GlobalCommandOptions) (err error) {
 	log.Printf("Cleaning up %s", cleanupList)
 
 	jobConfig := c.cleanupConfig.JobConfig
+	var wg sync.WaitGroup
+	wg.Add(len(cleanupList))
 
-	for _, name := range cleanupList {
+	createJob := func(name string, errs chan error) {
+		defer wg.Done()
+
 		if err := c.kubernetesManager.CreateCleanupJob(&external.CleanupJobConfig{
 			Name:             name,
 			Image:            jobConfig.Image,
@@ -155,8 +159,29 @@ func (c *CleanupCommand) Execute(globals *GlobalCommandOptions) (err error) {
 			JobNamespace:     jobConfig.JobNamespace,
 			ConnectionString: jobConfig.ConnectionString,
 		}); err != nil {
-			return errors.Wrap(err, "Failed to create cleanupJob")
+			errs <- errors.Wrap(err, "Failed to create cleanupJob")
 		}
+	}
+
+	errs := make(chan error, len(cleanupList))
+
+	for _, name := range cleanupList {
+		go createJob(name, errs)
+	}
+
+	wg.Wait()
+	close(errs)
+
+	var allErrs []string
+	for goErrs := range errs {
+		if goErrs != nil {
+			allErrs = append(allErrs, fmt.Sprintf(" %d) %s", len(allErrs), goErrs))
+		}
+	}
+
+	if len(allErrs) > 0 {
+		allErr := errors.New(strings.Join(allErrs, ""))
+		return errors.Wrap(allErr, "jobs failed")
 	}
 
 	return
