@@ -90,8 +90,6 @@ func (c *CleanupCommand) ReadConfigFile(fileReader external.IFileReader, path st
 		return nil, errors.Wrap(err, "Failed to unmarshal config file")
 	}
 
-	log.Printf("Config: %+v, git: %+v, job: %+v", *config, *config.GitProvider, *config.JobConfig)
-
 	return
 }
 
