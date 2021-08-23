@@ -150,6 +150,12 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 		return errors.Wrap(err, "Failed to parse Timeout")
 	}
 
+	// log.Printf("Create job: %+v", cleanupJob)
+	_, err = k.clientset.BatchV1().Jobs(config.JobNamespace).Create(k.context, cleanupJob, metav1.CreateOptions{})
+	if err != nil {
+		return errors.Wrap(err, "Failed to create cleanup job")
+	}
+
 	durSeconds := int64(dur.Seconds())
 
 	log.Printf("Watching job-name=%s, timeout: %d", name, durSeconds)
@@ -159,14 +165,7 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "Failed to create watcher")
-	}
-
-	// log.Printf("Create job: %+v", cleanupJob)
-	_, err = k.clientset.BatchV1().Jobs(config.JobNamespace).Create(k.context, cleanupJob, metav1.CreateOptions{})
-
-	if err != nil {
-		return errors.Wrap(err, "Failed to create cleanup job")
+		return errors.Wrapf(err, "Failed to create watcher: %+v", watcher)
 	}
 
 	for event := range watcher.ResultChan() {
