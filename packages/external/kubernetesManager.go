@@ -19,7 +19,6 @@ import (
 type KubernetesManager struct {
 	clientset *kubernetes.Clientset
 	context   context.Context
-	fail      bool
 }
 
 type IKubernetesManager interface {
@@ -153,6 +152,7 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 
 	durSeconds := int64(dur.Seconds())
 
+	log.Printf("Watching job-name=%s, timeout: %d", name, durSeconds)
 	watcher, err := k.clientset.BatchV1().Jobs(config.JobNamespace).Watch(k.context, metav1.ListOptions{
 		LabelSelector:  fmt.Sprintf("job-name=%s", name),
 		TimeoutSeconds: &durSeconds,
@@ -183,12 +183,12 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 			if ok {
 				log.Printf("Job '%s' finished sucessfully", job.Name)
 
-				deletePolicy := metav1.DeletePropagationForeground
-				err = k.clientset.BatchV1().Jobs(config.JobNamespace).Delete(k.context, name, metav1.DeleteOptions{PropagationPolicy: &deletePolicy})
+				// deletePolicy := metav1.DeletePropagationForeground
+				// err = k.clientset.BatchV1().Jobs(config.JobNamespace).Delete(k.context, name, metav1.DeleteOptions{PropagationPolicy: &deletePolicy})
 
-				if err != nil {
-					return errors.Wrap(err, "Failed to delete job")
-				}
+				// if err != nil {
+				// 	return errors.Wrap(err, "Failed to delete job")
+				// }
 
 				return nil
 			}
