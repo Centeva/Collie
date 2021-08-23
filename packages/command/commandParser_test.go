@@ -16,12 +16,8 @@ func Test_ParseCommands(t *testing.T) {
 	sut.ParseCommands()
 
 	gotParse := flagProvider.Called["parse"]
-	gotStringVar := flagProvider.Called["stringvar"]
 
-	if gotParse != 1 {
-		t.Errorf("ParseFlags(): flagProvider.Parse() Should have been called once got: %v", flagProvider.Called)
-	}
-	if gotStringVar != 1 {
-		t.Errorf("ParseFlags(): flagProvider.StringVar() Should have been called once got: %v", flagProvider.Called)
+	if gotParse != 5 {
+		t.Errorf("ParseFlags(): flagProvider.Parse() Should have been called five times got: %v", flagProvider.Called)
 	}
 }
