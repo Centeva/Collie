@@ -17,7 +17,7 @@ func Test_ParseCommands(t *testing.T) {
 
 	gotParse := flagProvider.Called["parse"]
 
-	if gotParse != 5 {
-		t.Errorf("ParseFlags(): flagProvider.Parse() Should have been called five times got: %v", flagProvider.Called)
+	if gotParse != 0 {
+		t.Errorf("ParseFlags(): flagProvider.Parse() Should not have been called; got: %v", flagProvider.Called)
 	}
 }

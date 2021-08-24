@@ -1,7 +1,6 @@
 package command
 
 import (
-	"log"
 	"os"
 
 	"bitbucket.org/centeva/collie/packages/external"
@@ -65,20 +64,6 @@ func (parser CommandParser) ParseCommands() (err error) {
 
 	if len(os.Args) < 1 || os.Args[0] == "" {
 		return errors.New("Must specify a command to run")
-	}
-
-	// Some commands are more global (Logger), these command flags should be added to all subcommands and might have extra logic that needs to happen before we execute other commands.
-	for _, c := range parser.commands {
-		// If a command doesn't have a subcommand then it must be global.
-		if _, ok := c.(IIsCurrentSubcommand); !ok {
-			log.Printf("globalCommand: %T", c)
-			if err := c.GetFlags(parser.flagProvider); err != nil {
-				return errors.Wrapf(err, "Failed to get flags for command: %T", c)
-			}
-		}
-
-		parser.flagProvider.Parse()
-
 	}
 
 	for _, c := range parser.commands {
