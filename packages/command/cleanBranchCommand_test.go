@@ -20,6 +20,7 @@ func Test_cleanBranch(t *testing.T) {
 		{name: "should strip specials", args: args{name: "test@$#!?&branch"}, want: "testbranch"},
 		{name: "should lowercase", args: args{name: "TEST-BRANCH"}, want: "test-branch"},
 		{name: "should handle complicated", args: args{name: "test@$#\\/!?&BRANcH/123-2/"}, want: "test-branch-123-2-"},
+		{name: "should handle underscores", args: args{name: "test_branch-1"}, want: "test-branch-1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

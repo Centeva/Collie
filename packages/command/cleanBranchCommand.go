@@ -92,7 +92,7 @@ func GetTeamcityTag(kind interface{}, fieldName string) (paramName string, err e
 }
 
 func CleanBranch(name string) string {
-	matchSlash := regexp.MustCompile(`/`)
+	matchSlash := regexp.MustCompile(`[/_]`)
 	matchSpecial := regexp.MustCompile(`[^\w\s-]`)
 	res := matchSlash.ReplaceAllString(name, "-")
 	res = matchSpecial.ReplaceAllString(res, "")
