@@ -1,19 +1,25 @@
 package main
 
 import (
+	"log"
+
 	"bitbucket.org/centeva/collie/packages/command"
-	"bitbucket.org/centeva/collie/packages/core"
 	"bitbucket.org/centeva/collie/packages/external"
 )
 
 func main() {
-	gitProviderFactory := &external.GitProviderFactory{
-		BitbucketManager: external.NewBitbucketManager(),
-	}
-	postgresManager := external.NewPostgresManager()
+	log.SetFlags(0)
 
-	cmd := command.NewCommandParser(&external.FlagProvider{}, gitProviderFactory, &external.KubernetesManager{}, postgresManager, &external.FileReader{})
-	err := core.Entry(cmd)
+	flagProvider := external.NewFlagProvider()
+	bitbucketManager := external.NewBitbucketManager()
+	gitProviderFactory := external.NewGitProviderFactory(bitbucketManager)
+	kubernetesManager := &external.KubernetesManager{}
+	postgresManager := external.NewPostgresManager()
+	fileReader := &external.FileReader{}
+
+	cmd := command.NewCommandParser(flagProvider, gitProviderFactory, kubernetesManager, postgresManager, fileReader)
+
+	err := cmd.ParseCommands()
 
 	if err != nil {
 		panic(err)

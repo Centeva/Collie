@@ -13,34 +13,38 @@ import (
 )
 
 type CleanBranchCommand struct {
+	cmd external.IFlagSet
+
 	CleanBranch string `tc:"cleanbranch"`
 	Logger      *string
 }
 
-func (c *CleanBranchCommand) IsCurrentSubcommand() bool {
+func NewCleanBranchCommand(flagProvider external.IFlagProvider) *CleanBranchCommand {
+	return &CleanBranchCommand{
+		cmd: flagProvider.NewFlagSet("CleanBranch", "Format branch name Usage: CleanBranch <Branch>"),
+	}
+}
+
+func (c *CleanBranchCommand) IsCurrent() bool {
 	return len(os.Args) > 1 && strings.EqualFold(os.Args[1], "CleanBranch")
 }
 
-func (c *CleanBranchCommand) GetFlags(flagProvider external.IFlagProvider) (err error) {
-	cmd := flagProvider.NewFlagSet("CleanBranch", "Format branch name Usage: CleanBranch <Branch>")
+func (c *CleanBranchCommand) GetFlags() (err error) {
+	c.Logger = c.cmd.String("Logger", string(CLI), "Log output style to use [cli|teamcity]")
+
 	if len(os.Args) <= 2 || os.Args[2] == "" {
-		return errors.New("format branch name Usage: CleanBranch <Branch>")
+		c.cmd.PrintDefaults()
+		return errors.New("Missing branch, see usage.")
 	}
+
 	c.CleanBranch = os.Args[2]
-	c.Logger = cmd.String("Logger", string(CLI), "Log output style to use [cli,teamcity]")
 
-	cmd.Parse(os.Args[3:])
-	return
-}
+	c.cmd.Parse(os.Args[3:])
 
-func (c *CleanBranchCommand) FlagsValid() (err error) {
 	if c.CleanBranch == "" {
 		return errors.New("CleanBranch is required")
 	}
-	return
-}
 
-func (c *CleanBranchCommand) BeforeExecute(globals *GlobalCommandOptions) (err error) {
 	if c.Logger == nil || *c.Logger == "" {
 		return errors.New("logger must have a value")
 	}
@@ -50,15 +54,14 @@ func (c *CleanBranchCommand) BeforeExecute(globals *GlobalCommandOptions) (err e
 	if logger != "cli" && logger != "teamcity" {
 		return errors.Errorf("logger must be either 'cli' or 'teamcity' got '%s'", logger)
 	}
-
-	globals.Logger = (LoggerTypes)(*c.Logger)
 	return
 }
 
-func (c *CleanBranchCommand) Execute(globals *GlobalCommandOptions) (err error) {
+func (c *CleanBranchCommand) Execute() (err error) {
 	name := CleanBranch(c.CleanBranch)
-	switch globals.Logger {
-	case TEAMCITY:
+	logger := *c.Logger
+	switch logger {
+	case string(TEAMCITY):
 		{
 			paramName, err := GetTeamcityTag(c, "CleanBranch")
 			if err != nil {
@@ -66,7 +69,7 @@ func (c *CleanBranchCommand) Execute(globals *GlobalCommandOptions) (err error) 
 			}
 			log.Printf("##teamcity[setParameter name='%s' value='%s']", paramName, name)
 		}
-	case CLI:
+	case string(CLI):
 		fallthrough
 	default:
 		log.Printf("%s", name)

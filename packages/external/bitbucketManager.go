@@ -17,6 +17,12 @@ type GitProviderFactory struct {
 	BitbucketManager IGitProvider
 }
 
+func NewGitProviderFactory(bitbucketManager IGitProvider) *GitProviderFactory {
+	return &GitProviderFactory{
+		BitbucketManager: bitbucketManager,
+	}
+}
+
 type IGitProvider interface {
 	GetOpenPRBranches(workspace string, repo string) (branches []string, err error)
 	Comment(workspace string, repo string, branch string, comment string) (err error)
