@@ -15,32 +15,14 @@ const (
 )
 
 type ICommand interface {
-	GetFlags(external.IFlagProvider) (err error)
-	FlagsValid() (err error)
-	Execute(*GlobalCommandOptions) (err error)
-}
-
-type ICommandParser interface {
-	ParseCommands() (err error)
-}
-
-// Should look at removing this.
-type IBeforeExecute interface {
-	BeforeExecute(*GlobalCommandOptions) (err error)
-}
-
-type IIsCurrentSubcommand interface {
-	IsCurrentSubcommand() bool
-}
-
-type GlobalCommandOptions struct {
-	Logger LoggerTypes
+	GetFlags() (err error)
+	Execute() (err error)
+	IsCurrent() bool
 }
 
 type CommandParser struct {
 	flagProvider      external.IFlagProvider
 	kubernetesManager external.IKubernetesManager
-	globals           *GlobalCommandOptions
 	commands          []ICommand
 }
 
@@ -48,13 +30,13 @@ func NewCommandParser(flagProvider external.IFlagProvider, gitProviderFactory *e
 	parser := &CommandParser{
 		flagProvider:      flagProvider,
 		kubernetesManager: kubernetesManager,
-		globals:           &GlobalCommandOptions{},
 		commands: []ICommand{
-			&CleanBranchCommand{},
-			NewPRCommentCommand(gitProviderFactory),
-			NewNamespaceCommand(kubernetesManager),
-			NewDatabaseCommand(postgresManager),
-			NewCleanupCommand(fileReader, gitProviderFactory, kubernetesManager),
+			NewCleanBranchCommand(flagProvider),
+			NewPRCommentCommand(flagProvider, gitProviderFactory),
+			NewNamespaceCommand(flagProvider, kubernetesManager),
+			NewDatabaseCommand(flagProvider, postgresManager),
+			NewCleanupCommand(flagProvider, kubernetesManager, fileReader, gitProviderFactory),
+			NewHelpCommand(flagProvider),
 		},
 	}
 	return parser
@@ -67,27 +49,23 @@ func (parser CommandParser) ParseCommands() (err error) {
 	}
 
 	for _, c := range parser.commands {
-		if ft, ok := c.(IIsCurrentSubcommand); ok {
-			if ft.IsCurrentSubcommand() {
-				if err := c.GetFlags(parser.flagProvider); err != nil {
-					return errors.Wrapf(err, "Failed to get flags for command: %T", c)
-				}
-
-				if err = c.FlagsValid(); err != nil {
-					return errors.Wrap(err, "Failed to validate arguments")
-				}
-
-				if ft, ok := c.(IBeforeExecute); ok {
-					if err := ft.BeforeExecute(parser.globals); err != nil {
-						return errors.Wrap(err, "Failed BeforeOthers")
-					}
-				}
-
-				if err = c.Execute(parser.globals); err != nil {
-					return errors.Wrap(err, "Failed to execute command")
-				}
+		if c.IsCurrent() {
+			if err := c.GetFlags(); err != nil {
+				return errors.Wrapf(err, "Failed to get flags for command: %T", c)
 			}
+
+			if err = c.Execute(); err != nil {
+				return errors.Wrap(err, "Failed to execute command")
+			}
+
+			return
 		}
+	}
+
+	help := NewHelpCommand(parser.flagProvider)
+
+	if err = help.Execute(); err != nil {
+		return errors.Wrap(err, "Failed to output help")
 	}
 
 	return

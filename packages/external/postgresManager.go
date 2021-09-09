@@ -10,7 +10,7 @@ import (
 
 type IPostgresManager interface {
 	Connect(connectionString string) (err error)
-	DeleteDatabase(databse string) (err error)
+	DeleteDatabase(database string) (err error)
 	Close()
 }
 

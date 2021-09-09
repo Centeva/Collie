@@ -13,7 +13,8 @@ func testSetup(args *TestArgs) *command.PRCommentCommand {
 	mockGitFactory := &external.GitProviderFactory{
 		BitbucketManager: testutils.NewMockGitProvider(),
 	}
-	sut := command.NewPRCommentCommand(mockGitFactory)
+	mockFlagProvider := testutils.NewMockFlagProvider()
+	sut := command.NewPRCommentCommand(mockFlagProvider, mockGitFactory)
 	sut.GitSource = newBitBucketSource(&args.GitSourceArgs)
 	return sut
 }
@@ -49,7 +50,6 @@ func newBitBucketSource(args *bitBucketSourceArgs) *command.BitBucketSource {
 }
 
 func Test_prCommentCommand_HappyPath(t *testing.T) {
-	mockGobals := &command.GlobalCommandOptions{}
 
 	args := &TestArgs{
 		GitProvider: "bitbucket",
@@ -66,7 +66,7 @@ func Test_prCommentCommand_HappyPath(t *testing.T) {
 	}
 
 	sut := testSetup(args)
-	err := sut.Execute(mockGobals)
+	err := sut.Execute()
 
 	if err != nil {
 		t.Errorf("prCommentCommand_HappyPath: should not error, %s", err)
@@ -164,7 +164,12 @@ func Test_prCommentCommand_Errors(t *testing.T) {
 
 	for _, args := range tests {
 		sut := testSetup(&args)
-		err := sut.FlagsValid()
+
+		var err error
+		switch s := sut.GitSource.(type) {
+		case *command.BitBucketSource:
+			err = sut.ValidateBitbucketFlags(s)
+		}
 
 		if err == nil {
 			t.Errorf("prCommentCommand_errors: FlagsValid should error but didn't. want: %s", args.Want)

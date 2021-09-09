@@ -14,55 +14,58 @@ import (
 )
 
 type CleanupCommand struct {
-	cleanupConfigPath  string
-	namespaceLabel     *string
-	cleanupConfig      *CleanupConfig
-	fileReader         external.IFileReader
 	gitProviderFactory *external.GitProviderFactory
 	kubernetesManager  external.IKubernetesManager
+	cmd                external.IFlagSet
+
+	cleanupConfigPath string
+	NamespaceLabel    *string
+	CleanupConfig     *CleanupConfig
+	fileReader        external.IFileReader
 }
 
-func NewCleanupCommand(FileReader external.IFileReader, gitProviderFactory *external.GitProviderFactory, kubernetesManager external.IKubernetesManager) *CleanupCommand {
+func NewCleanupCommand(flagProvider external.IFlagProvider, kubernetesManager external.IKubernetesManager, FileReader external.IFileReader, gitProviderFactory *external.GitProviderFactory) *CleanupCommand {
 	return &CleanupCommand{
 		fileReader:         FileReader,
 		gitProviderFactory: gitProviderFactory,
 		kubernetesManager:  kubernetesManager,
+		cmd:                flagProvider.NewFlagSet("Cleanup", "Compares open Pull Requests with namespaces in the cluster and cleanup extras, Usage: Cleanup <CleanupConfigPath>"),
 	}
 }
 
-func (c *CleanupCommand) IsCurrentSubcommand() bool {
+func (c *CleanupCommand) IsCurrent() bool {
 	return len(os.Args) > 1 && strings.EqualFold(os.Args[1], "Cleanup")
 }
 
 type CleanupConfig struct {
 	Kubeconfig  string                     `yaml:"kubeconfig"`
-	GitProvider *configGitProvider         `yaml:"gitProvider,omitempty"`
+	GitProvider *ConfigGitProvider         `yaml:"gitProvider,omitempty"`
 	JobConfig   *external.CleanupJobConfig `yaml:"job,omitempty"`
 }
 
-type configGitProvider struct {
-	Bitbucket *configBitbucketArgs `yaml:"bitbucket,omitempty"`
+type ConfigGitProvider struct {
+	Bitbucket *ConfigBitbucketArgs `yaml:"bitbucket,omitempty"`
 }
 
-type configBitbucketArgs struct {
+type ConfigBitbucketArgs struct {
 	ClientId  string `yaml:"clientId"`
 	Secret    string `yaml:"secret"`
 	Workspace string `yaml:"workspace"`
 	Repo      string `yaml:"repo"`
 }
 
-func (c *CleanupCommand) GetFlags(flagProvider external.IFlagProvider) (err error) {
-	cmd := flagProvider.NewFlagSet("Cleanup", "Compares open Pull Requests with namespaces in the cluster and cleanup extras.")
+func (c *CleanupCommand) GetFlags() (err error) {
+	c.NamespaceLabel = c.cmd.String("NamespaceLabel", "dev.centeva.meta=PullRequest", "Set the label used to check if a namespace can be cleaned up")
+
 	if len(os.Args) <= 2 || os.Args[2] == "" {
-		return errors.New("Cleanup requires a cleanupConfig file")
+		c.cmd.PrintDefaults()
+		return errors.New("Cleanup requires a cleanupConfig file, check usage.")
 	}
+
 	c.cleanupConfigPath = os.Args[2]
+	c.cmd.Parse(os.Args[3:])
 
-	c.namespaceLabel = cmd.String("NamespaceLabel", "dev.centeva.meta=PullRequest", "Set the label used to check if a namespace can be cleaned up")
-
-	cmd.Parse(os.Args[3:])
-
-	c.cleanupConfig, err = c.ReadConfigFile(c.fileReader, c.cleanupConfigPath)
+	c.CleanupConfig, err = readConfigFile(c.fileReader, c.cleanupConfigPath)
 
 	if err != nil {
 		return errors.Wrap(err, "Failed to read config")
@@ -71,15 +74,7 @@ func (c *CleanupCommand) GetFlags(flagProvider external.IFlagProvider) (err erro
 	return
 }
 
-func (k *CleanupCommand) FlagsValid() (err error) {
-	if k.cleanupConfigPath == "" {
-		return errors.New("CleanupConfig is required")
-	}
-
-	return
-}
-
-func (c *CleanupCommand) ReadConfigFile(fileReader external.IFileReader, path string) (config *CleanupConfig, err error) {
+func readConfigFile(fileReader external.IFileReader, path string) (config *CleanupConfig, err error) {
 	file, err := fileReader.ReadFile(path)
 
 	if err != nil {
@@ -93,14 +88,14 @@ func (c *CleanupCommand) ReadConfigFile(fileReader external.IFileReader, path st
 	return
 }
 
-func (c *CleanupCommand) Execute(globals *GlobalCommandOptions) (err error) {
+func (c *CleanupCommand) Execute() (err error) {
 
 	var branchesRaw []string
 
 	switch {
-	case c.cleanupConfig.GitProvider.Bitbucket != nil:
+	case c.CleanupConfig.GitProvider.Bitbucket != nil:
 		{
-			config := c.cleanupConfig.GitProvider.Bitbucket
+			config := c.CleanupConfig.GitProvider.Bitbucket
 
 			if _, err := c.gitProviderFactory.BitbucketManager.BasicAuth(config.ClientId, config.Secret); err != nil {
 				return errors.Wrap(err, "Failed to auth")
@@ -122,8 +117,8 @@ func (c *CleanupCommand) Execute(globals *GlobalCommandOptions) (err error) {
 
 	var namespaces []string
 
-	if c.cleanupConfig != nil && c.cleanupConfig.Kubeconfig != "" {
-		if _, err := c.kubernetesManager.OutClusterConfig(context.Background(), c.cleanupConfig.Kubeconfig); err != nil {
+	if c.CleanupConfig != nil && c.CleanupConfig.Kubeconfig != "" {
+		if _, err := c.kubernetesManager.OutClusterConfig(context.Background(), c.CleanupConfig.Kubeconfig); err != nil {
 			return errors.Wrap(err, "Failed to create outCluster config")
 		}
 	} else {
@@ -131,7 +126,7 @@ func (c *CleanupCommand) Execute(globals *GlobalCommandOptions) (err error) {
 			return errors.Wrap(err, "Failed to create inCluster config")
 		}
 	}
-	if namespaces, err = c.kubernetesManager.GetNamespaces(*c.namespaceLabel); err != nil {
+	if namespaces, err = c.kubernetesManager.GetNamespaces(*c.NamespaceLabel); err != nil {
 		return errors.Wrap(err, "Failed to get namespaces")
 	}
 
@@ -145,7 +140,7 @@ func (c *CleanupCommand) Execute(globals *GlobalCommandOptions) (err error) {
 
 	log.Printf("Cleaning up %s", cleanupList)
 
-	jobConfig := c.cleanupConfig.JobConfig
+	jobConfig := c.CleanupConfig.JobConfig
 	var wg sync.WaitGroup
 	wg.Add(len(cleanupList))
 

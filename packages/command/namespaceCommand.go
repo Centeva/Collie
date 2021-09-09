@@ -15,40 +15,34 @@ type NamespaceCommand struct {
 	kubernetesManager external.IKubernetesManager
 	ctx               context.Context
 	ctxCancel         context.CancelFunc
+	cmd               external.IFlagSet
 	Namespace         string
 	Kubeconfig        *string
 	Timeout           *string
 }
 
-func NewNamespaceCommand(kubernetesManager external.IKubernetesManager) *NamespaceCommand {
+func NewNamespaceCommand(flagProvider external.IFlagProvider, kubernetesManager external.IKubernetesManager) *NamespaceCommand {
 	return &NamespaceCommand{
 		kubernetesManager: kubernetesManager,
+		cmd:               flagProvider.NewFlagSet("DeleteNamespace", "Delete kubernetes namespace and everything in it Usage: DeleteNamespace <namespace>"),
 	}
 }
 
-func (k *NamespaceCommand) IsCurrentSubcommand() bool {
+func (k *NamespaceCommand) IsCurrent() bool {
 	return len(os.Args) > 1 && strings.EqualFold(os.Args[1], "DeleteNamespace")
 }
 
-func (k *NamespaceCommand) GetFlags(flagProvider external.IFlagProvider) (err error) {
-	cmd := flagProvider.NewFlagSet("DeleteNamespace", "Delete kubernetes namespace and everything in it Usage: DeleteNamespace <namespace>")
-	k.Timeout = cmd.String("Timeout", "10m", "Context Timout")
-	k.Kubeconfig = cmd.String("Kubeconfig", "", "Path to kubeconfig context file, used for running outside of the cluster")
+func (k *NamespaceCommand) GetFlags() (err error) {
+	k.Timeout = k.cmd.String("Timeout", "10m", "Context Timout")
+	k.Kubeconfig = k.cmd.String("Kubeconfig", "", "Path to kubeconfig context file, used for running outside of the cluster")
 
 	if len(os.Args) <= 2 || os.Args[2] == "" {
-		return errors.New("Delete kubernetes namespace and everything in it Usage: DeleteNamespace <namespace>")
+		k.cmd.PrintDefaults()
+		return errors.New("Missing namespace, see usage.")
 	}
 	k.Namespace = os.Args[2]
 
-	cmd.Parse(os.Args[3:])
-	return
-}
-
-func (k *NamespaceCommand) FlagsValid() (err error) {
-	if k.Namespace == "" {
-		return errors.New("Namespace is required")
-	}
-
+	k.cmd.Parse(os.Args[3:])
 	return
 }
 
@@ -65,7 +59,7 @@ func (k *NamespaceCommand) CreateContext() (ctx context.Context, err error) {
 	return
 }
 
-func (k *NamespaceCommand) Execute(globals *GlobalCommandOptions) (err error) {
+func (k *NamespaceCommand) Execute() (err error) {
 	if _, err := k.CreateContext(); err != nil {
 		return errors.Wrap(err, "Failed to create context")
 	}
@@ -76,7 +70,7 @@ func (k *NamespaceCommand) Execute(globals *GlobalCommandOptions) (err error) {
 		}
 	} else {
 		if _, err := k.kubernetesManager.InClusterConfig(k.ctx); err != nil {
-			return errors.Wrap(err, "Failed to create inCluster config")
+			return errors.Wrap(err, "Failed to create inCluster config, are you running in a cluster?")
 		}
 
 	}

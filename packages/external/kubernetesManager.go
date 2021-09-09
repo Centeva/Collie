@@ -104,15 +104,10 @@ type CleanupJobConfig struct {
 	Name             string
 }
 
-func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err error) {
-	if config.Timeout == "" {
-		config.Timeout = "2m"
-	}
-
+func buildCleanupJob(name string, config *CleanupJobConfig) *batchv1.Job {
 	ttlSecondsAfterFinished := int32(1)
-	name := fmt.Sprintf("cleanup-%s", config.Name)
 
-	cleanupJob := &batchv1.Job{
+	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: config.JobNamespace,
@@ -143,14 +138,21 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 			},
 		},
 	}
+}
+
+func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err error) {
+	if config.Timeout == "" {
+		config.Timeout = "2m"
+	}
+
+	name := fmt.Sprintf("cleanup-%s", config.Name)
+	cleanupJob := buildCleanupJob(name, config)
 
 	dur, err := time.ParseDuration(config.Timeout)
-
 	if err != nil {
 		return errors.Wrap(err, "Failed to parse Timeout")
 	}
 
-	// log.Printf("Create job: %+v", cleanupJob)
 	_, err = k.clientset.BatchV1().Jobs(config.JobNamespace).Create(k.context, cleanupJob, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrap(err, "Failed to create cleanup job")
@@ -172,7 +174,7 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 
 		switch event.Type {
 		case watch.Modified:
-			ok, err := CheckJobCompleted(job)
+			ok, err := checkJobCompleted(job)
 
 			if err != nil {
 				return errors.Wrapf(err, "Error watching job %s", job.Name)
@@ -196,7 +198,7 @@ func (k *KubernetesManager) CreateCleanupJob(config *CleanupJobConfig) (err erro
 	return errors.Errorf("Timeout error watching job %s", name)
 }
 
-func CheckJobCompleted(job *batchv1.Job) (res bool, err error) {
+func checkJobCompleted(job *batchv1.Job) (res bool, err error) {
 
 	if job == nil {
 		return false, errors.New("Job is nil")

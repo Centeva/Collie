@@ -71,6 +71,12 @@ func (m *MockFlagProvider) NewFlagSet(name string, usage string) external.IFlagS
 	return NewMockFlagSet("args1")
 }
 
+func (m *MockFlagProvider) GetUsage() map[string]string {
+	m.Called["getusage"]++
+
+	return make(map[string]string)
+}
+
 type mockFlagSet struct {
 	called     map[string]int
 	calledWith map[string][]interface{}
