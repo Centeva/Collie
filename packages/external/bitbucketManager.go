@@ -25,9 +25,8 @@ func NewGitProviderFactory(bitbucketManager IGitProvider) *GitProviderFactory {
 
 type IGitProvider interface {
 	GetOpenPRBranches(workspace string, repo string) (branches []string, err error)
-	Comment(workspace string, repo string, branch string, comment string) (err error)
+	Comment(workspace string, repo string, branch string, comment string, username *string, password *string) (err error)
 	BasicAuth(clientId string, secret string) (auth *AuthModel, err error)
-	UserAuth(clientId string, secret string, username string, password string) (auth *AuthModel, err error)
 }
 
 type ErrorModel struct {
@@ -128,16 +127,6 @@ func (m *BitbucketManager) BasicAuth(clientId string, secret string) (auth *Auth
 	return m.authenticate(clientId, secret, data)
 }
 
-func (m *BitbucketManager) UserAuth(clientId string, secret string, username string, password string) (auth *AuthModel, err error) {
-
-	data := &url.Values{
-		"grant_type": []string{"password"},
-		"username":   []string{username},
-		"password":   []string{password},
-	}
-	return m.authenticate(clientId, secret, data)
-}
-
 func (m *BitbucketManager) getPrForBranch(workspace string, repo string, branch string) (pr *PullRequestModel, err error) {
 	prPath := fmt.Sprintf(`https://api.bitbucket.org/2.0/repositories/%s/%s/pullrequests`, workspace, repo)
 	prUrl, err := buildUrl(prPath, map[string]string{
@@ -233,7 +222,7 @@ func (m *BitbucketManager) GetOpenPRBranches(workspace string, repo string) (bra
 	return
 }
 
-func (m *BitbucketManager) Comment(workspace string, repo string, branch string, comment string) (err error) {
+func (m *BitbucketManager) Comment(workspace string, repo string, branch string, comment string, username *string, password *string) (err error) {
 	pr, err := m.getPrForBranch(workspace, repo, branch)
 
 	jsonStr := []byte(fmt.Sprintf(`{"content":{"raw":"%s"}}`, comment))
@@ -256,8 +245,12 @@ func (m *BitbucketManager) Comment(workspace string, repo string, branch string,
 
 	req.Header.Set("Content-Type", "application/json")
 
-	if err = m.addAuthHeader(req); err != nil {
-		return errors.Wrap(err, "Failed to add auth headers")
+	if username != nil && password != nil {
+		req.SetBasicAuth(*username, *password)
+	} else {
+		if err = m.addAuthHeader(req); err != nil {
+			return errors.Wrap(err, "Failed to add auth headers")
+		}
 	}
 
 	commentRes, err := m.client.Do(req)

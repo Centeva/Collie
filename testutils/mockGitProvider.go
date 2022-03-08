@@ -21,15 +21,19 @@ type GPCommentArgs struct {
 	Repo      string
 	Branch    string
 	Comment   string
+	username  string
+	password  string
 }
 
-func (m *MockGitProvider) Comment(workspace string, repo string, branch string, comment string) (err error) {
+func (m *MockGitProvider) Comment(workspace string, repo string, branch string, comment string, username *string, password *string) (err error) {
 	m.Called["comment"]++
 	m.CalledWith["comment"] = append(m.CalledWith["comment"], &GPCommentArgs{
 		workspace,
 		repo,
 		branch,
 		comment,
+		*username,
+		*password,
 	})
 	return
 }

@@ -105,17 +105,11 @@ func (c *PRCommentCommand) Execute() (err error) {
 	switch s := c.GitSource.(type) {
 	case *BitBucketSource:
 		{
-			if s.Username != nil && *s.Username != "" {
-				if _, err := c.gitProviderFactory.BitbucketManager.UserAuth(*s.ClientId, *s.Secret, *s.Username, *s.Password); err != nil {
-					return errors.Wrap(err, "Failed to authenticate with bitbucket api while executing UserAuth")
-				}
-			} else {
-				if _, err := c.gitProviderFactory.BitbucketManager.BasicAuth(*s.ClientId, *s.Secret); err != nil {
-					return errors.Wrap(err, "Failed to authenticate with bitbucket api while executing BasicAuth")
-				}
+			if _, err := c.gitProviderFactory.BitbucketManager.BasicAuth(*s.ClientId, *s.Secret); err != nil {
+				return errors.Wrap(err, "Failed to authenticate with bitbucket api while executing BasicAuth")
 			}
 
-			if err := c.gitProviderFactory.BitbucketManager.Comment(*s.Workspace, *s.Repo, *s.Branch, *s.Comment); err != nil {
+			if err := c.gitProviderFactory.BitbucketManager.Comment(*s.Workspace, *s.Repo, *s.Branch, *s.Comment, s.Username, s.Password); err != nil {
 				return errors.Wrap(err, "Failed to add comment through bitbucket api")
 			}
 		}
