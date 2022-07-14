@@ -12,7 +12,8 @@ func main() {
 
 	flagProvider := external.NewFlagProvider()
 	bitbucketManager := external.NewBitbucketManager()
-	gitProviderFactory := external.NewGitProviderFactory(bitbucketManager)
+	githubManager := external.NewGithubManager()
+	gitProviderFactory := external.NewGitProviderFactory(bitbucketManager, githubManager)
 	kubernetesManager := &external.KubernetesManager{}
 	postgresManager := external.NewPostgresManager()
 	fileReader := &external.FileReader{}

@@ -2,7 +2,6 @@ package external
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,22 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 )
-
-type GitProviderFactory struct {
-	BitbucketManager IGitProvider
-}
-
-func NewGitProviderFactory(bitbucketManager IGitProvider) *GitProviderFactory {
-	return &GitProviderFactory{
-		BitbucketManager: bitbucketManager,
-	}
-}
-
-type IGitProvider interface {
-	GetOpenPRBranches(workspace string, repo string) (branches []string, err error)
-	Comment(workspace string, repo string, branch string, comment string, username *string, password *string) (err error)
-	BasicAuth(clientId string, secret string) (auth *AuthModel, err error)
-}
 
 type ErrorModel struct {
 	ErrorCode        string `json:"error"`
@@ -272,35 +255,6 @@ func (m *BitbucketManager) Comment(workspace string, repo string, branch string,
 
 	if resModel.ErrorCode != "" {
 		return errors.Errorf("API Error: %s %s", resModel.ErrorCode, resModel.ErrorDescription)
-	}
-
-	return
-}
-
-func buildUrl(path string, queryParams map[string]string) (resUrl string, err error) {
-	u, err := url.Parse(path)
-	if err != nil {
-		return "", errors.Wrapf(err, "Failed to parse path: %s", path)
-	}
-
-	q, err := url.ParseQuery(u.RawQuery)
-	if err != nil {
-		return "", errors.Wrapf(err, "Failed to parse query params: %s", u.RawQuery)
-	}
-
-	for key, param := range queryParams {
-		q.Add(key, param)
-	}
-
-	u.RawQuery = q.Encode()
-	return u.String(), nil
-}
-
-func jsonUnmarshal(t interface{}, r *http.Response) (err error) {
-	defer r.Body.Close()
-	decoder := json.NewDecoder(r.Body)
-	if err = decoder.Decode(&t); err != nil {
-		return errors.Wrapf(err, "Failed to Unmarshal data to type: %T", &t)
 	}
 
 	return

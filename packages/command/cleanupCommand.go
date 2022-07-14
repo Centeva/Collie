@@ -45,6 +45,7 @@ type CleanupConfig struct {
 
 type ConfigGitProvider struct {
 	Bitbucket *ConfigBitbucketArgs `yaml:"bitbucket,omitempty"`
+	Github    *ConfigGithubArgs    `yaml:"github,omitempty"`
 }
 
 type ConfigBitbucketArgs struct {
@@ -52,6 +53,13 @@ type ConfigBitbucketArgs struct {
 	Secret    string `yaml:"secret"`
 	Workspace string `yaml:"workspace"`
 	Repo      string `yaml:"repo"`
+}
+
+type ConfigGithubArgs struct {
+	Organization string `yaml:"organization"`
+	Repo         string `yaml:"repo"`
+	Token        string `yaml:"token"`
+	Username     string `yaml:"username"`
 }
 
 func (c *CleanupCommand) GetFlags() (err error) {
@@ -102,7 +110,17 @@ func (c *CleanupCommand) Execute() (err error) {
 			}
 
 			if branchesRaw, err = c.gitProviderFactory.BitbucketManager.GetOpenPRBranches(config.Workspace, config.Repo); err != nil {
-				return errors.Wrap(err, "Faield to get branches")
+				return errors.Wrap(err, "Failed to get branches")
+			}
+		}
+	case c.CleanupConfig.GitProvider.Github != nil:
+		{
+			config := c.CleanupConfig.GitProvider.Github
+
+			c.gitProviderFactory.GithubManager.BasicAuth(config.Username, config.Token)
+
+			if branchesRaw, err = c.gitProviderFactory.GithubManager.GetOpenPRBranches(config.Organization, config.Repo); err != nil {
+				return errors.Wrap(err, "Failed to get branches")
 			}
 		}
 	default:
