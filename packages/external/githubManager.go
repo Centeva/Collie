@@ -97,7 +97,7 @@ func (m *GithubManager) Comment(workspace string, repo string, branch string, co
 		return errors.Wrap(err, "Failed to make request")
 	}
 
-	if commentRes.StatusCode != 201 {
+	if commentRes.StatusCode != http.StatusCreated {
 		body, _ := ioutil.ReadAll(commentRes.Body)
 		return errors.Errorf("Request Error: %s %s", commentRes.Status, string(body))
 	}
@@ -179,7 +179,7 @@ func (m *GithubManager) GetOpenPRBranches(workspace string, repo string) (branch
 		return nil, errors.Wrap(err, "Failed to get open pullRequests")
 	}
 
-	if prRes.StatusCode != 200 {
+	if prRes.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(prRes.Body)
 		return nil, errors.Errorf("Request Error: %s %s", prRes.Status, string(body))
 	}

@@ -184,7 +184,7 @@ func (m *BitbucketManager) GetOpenPRBranches(workspace string, repo string) (bra
 		return nil, errors.Wrap(err, "Failed to get open pull requests")
 	}
 
-	if prRes.StatusCode == 400 {
+	if prRes.StatusCode == http.StatusBadRequest {
 		body, _ := ioutil.ReadAll(prRes.Body)
 		return nil, errors.Errorf("Request Error: %s %s", prRes.Status, string(body))
 	}
@@ -241,7 +241,7 @@ func (m *BitbucketManager) Comment(workspace string, repo string, branch string,
 		return errors.Wrap(err, "Failed to make request")
 	}
 
-	if commentRes.StatusCode == 400 {
+	if commentRes.StatusCode == http.StatusBadRequest {
 		body, _ := ioutil.ReadAll(commentRes.Body)
 		return errors.Errorf("Request Error: %s %s", commentRes.Status, string(body))
 	}
