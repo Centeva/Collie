@@ -75,7 +75,6 @@ func (c *PRCommentCommand) GetFlags() (err error) {
 			return errors.Wrapf(err, "Failed to validate flags")
 		}
 	case "github":
-		log.Print("GetFlags github")
 		source := &GithubSource{
 			Organization: c.cmd.String("Organization", "", "(required) Github Organization"),
 			Repo:         c.cmd.String("Repo", "", "(required) Repository name"),
