@@ -47,7 +47,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./client/dockerfile
+          file: ./dockerfile
           pull: false
           push: true
           cache-from: type=local,src=/tmp/.main-cache
